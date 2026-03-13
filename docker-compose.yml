@@ -1,0 +1,80 @@
+services:
+  watchparty:
+    image: muaeabudhabi/watchparty:latest
+    restart: unless-stopped
+    labels:
+      com.centurylinklabs.watchtower.enable: 'true'
+      org.titan.app: watchparty
+    environment:
+    - NODE_ENV=production
+    - LOG_LEVEL=info
+    - PUID=99
+    - PGID=100
+    - UMASK=022
+    - DATABASE_URL=postgresql://watchparty:changeme@watchparty_postgres:5432/watchparty
+    - REDIS_URL=redis://watchparty_redis:6379
+    volumes:
+    - /mnt/user/appdata/watchparty/data:/data
+    - /mnt/user/appdata/watchparty/config:/config
+    logging:
+      driver: json-file
+      options: &id001
+        max-size: 10m
+        max-file: '3'
+    networks:
+    - watchparty_net
+    depends_on:
+      watchparty_postgres:
+        condition: service_healthy
+      watchparty_redis:
+        condition: service_healthy
+  watchparty_postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+    - POSTGRES_DB=watchparty
+    - POSTGRES_USER=watchparty
+    - POSTGRES_PASSWORD=changeme
+    volumes:
+    - watchparty_postgres_data:/var/lib/postgresql/data
+    networks:
+    - watchparty_net
+    logging:
+      driver: json-file
+      options: *id001
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - pg_isready -U ${POSTGRES_USER:-app}
+      interval: 30s
+      timeout: 5s
+      retries: 5
+  watchparty_redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    environment: []
+    volumes:
+    - watchparty_redis_data:/data
+    networks:
+    - watchparty_net
+    logging:
+      driver: json-file
+      options: *id001
+    healthcheck:
+      test:
+      - CMD
+      - redis-cli
+      - ping
+      interval: 30s
+      timeout: 5s
+      retries: 5
+networks:
+  watchparty_net:
+    driver: bridge
+volumes:
+  watchparty_data:
+    driver: local
+  watchparty_postgres_data:
+    driver: local
+  watchparty_redis_data:
+    driver: local
