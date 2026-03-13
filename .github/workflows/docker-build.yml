@@ -54,13 +54,16 @@ jobs:
           # Either way, we save our generated file as Dockerfile.titan for
           # reference — it contains the Unraid-optimised multi-stage template.
           cp wrapper/Dockerfile source/Dockerfile.titan
+          # Always use TITAN-generated Dockerfile for Unraid compatibility.
+          # Upstream Alpine-based Dockerfiles often fail (missing build
+          # tools, musl/glibc issues). Our Dockerfile is Debian-based with
+          # multi-stage build, PUID/PGID support, and proper layer caching.
           if [ -f source/Dockerfile ]; then
-            echo "✓ Upstream Dockerfile found — using it as build context"
-            echo "  (TITAN-generated template saved as Dockerfile.titan)"
-          else
-            echo "✓ No upstream Dockerfile — using TITAN-generated Dockerfile"
-            cp wrapper/Dockerfile source/Dockerfile
+            echo "✓ Upstream Dockerfile found — saving as Dockerfile.upstream"
+            mv source/Dockerfile source/Dockerfile.upstream
           fi
+          echo "✓ Using TITAN-generated Dockerfile for Unraid compatibility"
+          cp wrapper/Dockerfile source/Dockerfile
           echo "Build context files:"
           ls source/ | head -20
 
